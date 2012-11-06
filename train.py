@@ -45,7 +45,7 @@ def file_len(fname):
 def initVector(no, ref, start, count, vec_size):
     for i in range(start, start+count):
         ref[i] = BitVector(intVal =0, size=vec_size)
-        # print "Thread-%d init'ed %d" % (no, i)
+        print "Thread-%d init'ed %d" % (no, i)
 
 
 if __name__ == "__main__":
@@ -100,25 +100,26 @@ if __name__ == "__main__":
     MAX_DOCS = N
 
 
-    # Initialize vectors
-    print "Initializing Vectors"
-    a = datetime.datetime.now()
-    
-    max_vectors = 50000
-    per_thread = 2000
-    VectorPool = [None] * max_vectors
-    threads = []
-    for f in range(0, int(len(VectorPool) / per_thread)):
-        print "Starting thread: %d" % f
-        th = Thread(target=initVector, args=(f, VectorPool, f * per_thread, per_thread, N,))
-        th.start()
-        threads.append(th)
+    # Initialize vectors (only needed for MI algorithm)
+    if constants.FEATURE_SELECTION is not None:
+        print "Initializing Vectors"
+        a = datetime.datetime.now()
+        
+        max_vectors = constants.K_FEATURES
+        per_thread = int(constants.K_FEATURES / constants.NUM_THREADS)
+        VectorPool = [None] * max_vectors
+        threads = []
+        for f in range(0, int(len(VectorPool) / per_thread)):
+            print "Starting thread: %d" % f
+            th = Thread(target=initVector, args=(f, VectorPool, f * per_thread, per_thread, N,))
+            th.start()
+            threads.append(th)
 
-    for th in threads:
-        th.join()
-        print "Thread %s finished" % th.getName()
-    b = datetime.datetime.now()
-    print "%d Vectors initialized in %0.4f seconds " % (max_vectors, ( (b-a).microseconds / 1000.0) / 1000.0 )
+        for th in threads:
+            th.join()
+            print "Thread %s finished" % th.getName()
+        b = datetime.datetime.now()
+        print "%d Vectors initialized in %0.4f seconds " % (max_vectors, ( (b-a).microseconds / 1000.0) / 1000.0 )
 
     print "Total Documents: %d" % N
 
@@ -150,9 +151,11 @@ if __name__ == "__main__":
                 classes_postings[label] = []
                 text[label] = ""
                 total_occurances[label] = 0
-                C[label] = BitVector(intVal =0, size=N)
+                if constants.FEATURE_SELECTION is not None:
+                    C[label] = BitVector(intVal =0, size=N)
 
-            C[label][i] = 1
+            if constants.FEATURE_SELECTION is not None:
+                C[label][i] = 1
 
             classes_postings[label].append(i)
             text[label] = text[label] + " " + doc
@@ -170,8 +173,9 @@ if __name__ == "__main__":
                 if token not in vocabulary:
                     vocabulary[token] = dict()
                     vocabulary_postings[token] = dict()
-                    T[token] = VectorPool[pool_i]
-                    pool_i += 1
+                    if constants.FEATURE_SELECTION is not None:
+                        T[token] = VectorPool[pool_i]
+                        pool_i += 1
 
                 if label not in vocabulary[token]:
                     vocabulary[token][label] = 0
@@ -179,8 +183,9 @@ if __name__ == "__main__":
 
                 vocabulary[token][label] = vocabulary[token][label] + 1
                 vocabulary_postings[token][label].add(i)
-                total_occurances[label] = total_occurances[label] + 1            
-                T[token][i] = 1
+                total_occurances[label] = total_occurances[label] + 1  
+                if constants.FEATURE_SELECTION is not None:          
+                    T[token][i] = 1
 
             i = i + 1
 
