@@ -105,7 +105,7 @@ if __name__ == "__main__":
         print "Initializing Vectors"
         a = datetime.datetime.now()
         
-        max_vectors = constants.K_FEATURES
+        max_vectors = 50000
         per_thread = int(constants.K_FEATURES / constants.NUM_THREADS)
         VectorPool = [None] * max_vectors
         threads = []
