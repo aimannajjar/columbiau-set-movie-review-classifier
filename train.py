@@ -22,6 +22,8 @@ import constants
 import math
 import array
 import numpy
+import thread
+from threading import Thread
 from PorterStemmer import PorterStemmer
 from BitVector import BitVector
 from nltk import *
@@ -39,6 +41,11 @@ def file_len(fname):
             pass
     return i + 1
 
+
+def initVector(no, ref, start, count, vec_size):
+    for i in range(start, start+count):
+        ref[i] = BitVector(intVal =0, size=vec_size)
+        # print "Thread-%d init'ed %d" % (no, i)
 
 
 if __name__ == "__main__":
@@ -76,6 +83,7 @@ if __name__ == "__main__":
 
 
 
+
     # Load Dictionaries
     stop_words = load_dictionary("stop_words.txt")
 
@@ -91,6 +99,27 @@ if __name__ == "__main__":
 
     MAX_DOCS = N
 
+
+    # Initialize vectors
+    print "Initializing Vectors"
+    a = datetime.datetime.now()
+    
+    max_vectors = 50000
+    per_thread = 2000
+    VectorPool = [None] * max_vectors
+    threads = []
+    for f in range(0, int(len(VectorPool) / per_thread)):
+        print "Starting thread: %d" % f
+        th = Thread(target=initVector, args=(f, VectorPool, f * per_thread, per_thread, N,))
+        th.start()
+        threads.append(th)
+
+    for th in threads:
+        th.join()
+        print "Thread %s finished" % th.getName()
+    b = datetime.datetime.now()
+    print "%d Vectors initialized in %0.4f seconds " % (max_vectors, ( (b-a).microseconds / 1000.0) / 1000.0 )
+
     print "Total Documents: %d" % N
 
 
@@ -98,6 +127,7 @@ if __name__ == "__main__":
     # Feature Extraction
     # -------------------------------
     i = 0
+    pool_i = 0
     for filename in os.listdir(args[1]):
         if not filename.endswith(".csv"):
             continue
@@ -140,7 +170,8 @@ if __name__ == "__main__":
                 if token not in vocabulary:
                     vocabulary[token] = dict()
                     vocabulary_postings[token] = dict()
-                    T[token] = BitVector(intVal=0, size=N)
+                    T[token] = VectorPool[pool_i]
+                    pool_i += 1
 
                 if label not in vocabulary[token]:
                     vocabulary[token][label] = 0
