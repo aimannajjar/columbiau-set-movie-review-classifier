@@ -177,7 +177,10 @@ def ApplyBNB(doc_tokens, classes_postings, condprob, prior, vocabulary, selected
             if t in doc_features:
                 scores[c] += math.log(condprob[t][c])
             else:
-                scores[c] += math.log(1.0 - condprob[t][c])
+                try:
+                    scores[c] += math.log(1.0 - condprob[t][c])
+                except:
+                    pass
 
 
     diff = math.fabs(scores["0"] - scores["1"])
