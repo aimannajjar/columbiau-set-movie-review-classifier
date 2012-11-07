@@ -116,8 +116,9 @@ if __name__ == "__main__":
         print "    Text: %s" % doc
         print "    Class: %s" % label
         print "    Score: %f" % max_score
+        avg_diff += math.fabs( scores[i]["0"] - scores[i]["1"])
         if validate_mode is True:
-            avg_diff += math.fabs( scores[i]["0"] - scores[i]["1"])
+            
             if label == expected_label:
                 print "    Correct Guess "
                 avg_diff_correct += math.fabs( scores[i]["0"] - scores[i]["1"])
@@ -137,10 +138,10 @@ if __name__ == "__main__":
     
     if validate_mode is True:
         print "Accuracy: %f" % ((correct_guesses / float(i)) * 100)
-        print "Avg. Scores Diff: %f" % (avg_diff / float(i))
         print "Avg. Diff for Correct Guesses: %f" % (avg_diff_correct / correct_guesses)
         print "Avg. Diff for Incorrect Guesses: %f" % (avg_diff_incorrect / (i - correct_guesses))
 
+    print "Avg. Scores Diff: %f" % (avg_diff / float(i))
 
     print "Vocabulary Size: %d" % len(vocabulary)
     print "Saving predictions_file file"

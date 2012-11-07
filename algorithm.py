@@ -6,6 +6,7 @@ from nltk.corpus import wordnet as wn
 from sentiwordnet import SentiWordNetCorpusReader, SentiSynset
 from nltk import *
 from common import *
+from BitVector import *
 
 # Load global dictionaries
 swn_filename = 'dictionaries/SentiWordNet_3.0.0_20120510.txt'
@@ -176,7 +177,7 @@ def ApplyBNB(doc_tokens, classes_postings, condprob, prior, vocabulary, selected
             if t in doc_features:
                 scores[c] += math.log(condprob[t][c])
             else:
-                scores[c] += math.log(1 - condprob[t][c])
+                scores[c] += math.log(1.0 - condprob[t][c])
 
 
     diff = math.fabs(scores["0"] - scores["1"])
@@ -191,11 +192,26 @@ def compute_mi(vocabulary,classes_postings,T,C, N):
     print("Vocabulary Size: %d" % len(vocabulary))
     z = 1
     Nv = len(vocabulary)
+    Tvectors = dict()
+    NTvectors = dict()
+    Cvectors = dict()
+    NCvectors = dict()
     for t in vocabulary:
         MI[t] = dict()
         print("Processing term %d / %d" % (z, Nv))
 
+        if t not in Tvectors:
+            Tvectors[t] = BitVector(bitstring = "".join(T[t]))
+            NTvectors[t] = ~ Tvectors[t]
+
+
         for c in classes_postings:
+
+            if c not in Cvectors:
+                Cvectors[c] = BitVector(bitstring = "".join(C[c]))
+                NCvectors[c] = ~ Cvectors[c]
+
+
             MI[t][c] = 0.0
             # -----------------------------
             # Let's compute MI factors
@@ -204,12 +220,12 @@ def compute_mi(vocabulary,classes_postings,T,C, N):
             # N10: Docs contain the term but not in the class            
             # N11: Docs contain the term and in the class
 
-            NT = ~T[t]
-            NC = ~C[c]
-            N11 = (T[t] & C[c]).count_bits() + 1.0
-            N00 = (NT & NC).count_bits() + 1.0
-            N10 = (T[t] & NC).count_bits() + 1.0
-            N01 = ( NT & C[c]).count_bits() + 1.0
+            NT = NTvectors[t]
+            NC = NCvectors[c]
+            N11 = (Tvectors[t] & Cvectors[c]).count_bits_sparse() + 1.0
+            N00 = (NT & NC).count_bits_sparse() + 1.0
+            N10 = (Tvectors[t] & NC).count_bits_sparse() + 1.0
+            N01 = ( NT & Cvectors[c]).count_bits_sparse() + 1.0
 
             N1x = N11 + N10 
             Nx1 = N11 + N01 
